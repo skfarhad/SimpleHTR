@@ -8,19 +8,19 @@ import copy
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from DataLoader import Batch
-from Model import Model, DecoderType
-from SamplePreprocessor import preprocess
+from src.DataLoader import Batch
+from src.Model import Model, DecoderType
+from src.SamplePreprocessor import preprocess
 
 
 # constants like filepaths
 class Constants:
 	"filenames and paths to data"
-	fnCharList = '../model/charList.txt'
-	fnAnalyze = '../data/analyze.png'
-	fnPixelRelevance = '../data/pixelRelevance.npy'
-	fnTranslationInvariance = '../data/translationInvariance.npy'
-	fnTranslationInvarianceTexts = '../data/translationInvarianceTexts.pickle'
+	fnCharList = '/model/charList.txt'
+	fnAnalyze = '/data/analyze.png'
+	fnPixelRelevance = '/data/pixelRelevance.npy'
+	fnTranslationInvariance = '/data/translationInvariance.npy'
+	fnTranslationInvarianceTexts = '/data/translationInvarianceTexts.pickle'
 	gtText = 'are'
 	distribution = 'histogram' # 'histogram' or 'uniform'
 
@@ -34,7 +34,9 @@ def weightOfEvidence(origProb, margProb):
 	
 	
 def analyzePixelRelevance():
-	"simplified implementation of paper: Zintgraf et al - Visualizing Deep Neural Network Decisions: Prediction Difference Analysis"
+	"""simplified implementation of paper:
+	Zintgraf et al -
+	Visualizing Deep Neural Network Decisions: Prediction Difference Analysis"""
 	
 	# setup model
 	model = Model(open(Constants.fnCharList).read(), DecoderType.BestPath, mustRestore=True)
@@ -146,11 +148,11 @@ def showResults():
 
 
 if __name__ == '__main__':
-	if len(sys.argv)>1:
-		if sys.argv[1]=='--relevance':
+	if len(sys.argv) > 1:
+		if sys.argv[1] == '--relevance':
 			print('Analyze pixel relevance')
 			analyzePixelRelevance()
-		elif sys.argv[1]=='--invariance':
+		elif sys.argv[1] == '--invariance':
 			print('Analyze translation invariance')
 			analyzeTranslationInvariance()
 	else:

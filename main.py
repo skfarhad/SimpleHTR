@@ -2,25 +2,30 @@ from __future__ import division
 from __future__ import print_function
 
 import sys
+import os
 import argparse
 import cv2
 import editdistance
-from DataLoader import DataLoader, Batch
-from Model import Model, DecoderType
-from SamplePreprocessor import preprocess
+from src.DataLoader import DataLoader, Batch
+from src.Model import Model, DecoderType
+from src.SamplePreprocessor import preprocess
 
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+print(BASE_DIR)
 
 class FilePaths:
-	"filenames and paths to data"
-	fnCharList = '../model/charList.txt'
-	fnAccuracy = '../model/accuracy.txt'
-	fnTrain = '../data/'
-	fnInfer = '../data/test.png'
-	fnCorpus = '../data/corpus.txt'
+	"""filenames and paths to data"""
+	fnCharList = os.path.join(BASE_DIR, 'model/charList.txt')
+	fnAccuracy = os.path.join(BASE_DIR, 'model/accuracy.txt')
+	fnTrain = os.path.join(BASE_DIR, 'data/')
+	fnInfer = os.path.join(BASE_DIR, 'data/test.png')
+	fnCorpus = os.path.join(BASE_DIR, 'data/corpus.txt')
 
 
 def train(model, loader):
-	"train NN"
+	"""train NN"""
 	epoch = 0 # number of training epochs since start
 	bestCharErrorRate = float('inf') # best valdiation character error rate
 	noImprovementSince = 0 # number of epochs no improvement of character error rate occured
@@ -118,6 +123,7 @@ def main():
 	# train or validate on IAM dataset	
 	if args.train or args.validate:
 		# load training data, create TF model
+		print(FilePaths.fnTrain)
 		loader = DataLoader(FilePaths.fnTrain, Model.batchSize, Model.imgSize, Model.maxTextLen)
 
 		# save characters of model for inference mode
