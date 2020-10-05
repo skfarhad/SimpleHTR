@@ -15,7 +15,7 @@ from src.SamplePreprocessor import preprocess
 
 # constants like filepaths
 class Constants:
-	"filenames and paths to data"
+	"""filenames and paths to data"""
 	fnCharList = '/model/charList.txt'
 	fnAnalyze = '/data/analyze.png'
 	fnPixelRelevance = '/data/pixelRelevance.npy'
@@ -39,7 +39,7 @@ def analyzePixelRelevance():
 	Visualizing Deep Neural Network Decisions: Prediction Difference Analysis"""
 	
 	# setup model
-	model = Model(open(Constants.fnCharList).read(), DecoderType.BestPath, mustRestore=True)
+	model = Model(open(Constants.fnCharList).read(), DecoderType.BestPath, must_restore=True)
 	
 	# read image and specify ground-truth text
 	img = cv2.imread(Constants.fnAnalyze, cv2.IMREAD_GRAYSCALE)
@@ -48,7 +48,7 @@ def analyzePixelRelevance():
 	
 	# compute probability of gt text in original image
 	batch = Batch([Constants.gtText], [preprocess(img, Model.imgSize)])
-	(_, probs) = model.inferBatch(batch, calcProbability=True, probabilityOfGT=True)
+	(_, probs) = model.infer_batch(batch, calc_probability=True, probability_of_gt=True)
 	origProb = probs[0]
 	
 	grayValues = [0, 63, 127, 191, 255]
@@ -77,7 +77,7 @@ def analyzePixelRelevance():
 			batch = Batch([Constants.gtText]*len(imgsMarginalized), imgsMarginalized)
 			
 			# compute probabilities
-			(_, probs) = model.inferBatch(batch, calcProbability=True, probabilityOfGT=True)
+			(_, probs) = model.infer_batch(batch, calc_probability=True, probability_of_gt=True)
 			
 			# marginalize over pixel value (assume uniform distribution)
 			margProb = sum([probs[i] * pixelProb[i] for i in range(len(grayValues))])
@@ -91,7 +91,7 @@ def analyzePixelRelevance():
 
 def analyzeTranslationInvariance():
 	# setup model
-	model = Model(open(Constants.fnCharList).read(), DecoderType.BestPath, mustRestore=True)
+	model = Model(open(Constants.fnCharList).read(), DecoderType.BestPath, must_restore=True)
 	
 	# read image and specify ground-truth text
 	img = cv2.imread(Constants.fnAnalyze, cv2.IMREAD_GRAYSCALE)
@@ -108,7 +108,7 @@ def analyzeTranslationInvariance():
 	batch = Batch([Constants.gtText]*len(imgList), imgList)
 	
 	# compute probabilities
-	(texts, probs) = model.inferBatch(batch, calcProbability=True, probabilityOfGT=True)
+	(texts, probs) = model.infer_batch(batch, calc_probability=True, probability_of_gt=True)
 	
 	# save results to file
 	f = open(Constants.fnTranslationInvarianceTexts, 'wb')
