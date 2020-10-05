@@ -7,6 +7,10 @@ import tensorflow as tf
 import os
 
 
+tf.compat.v1.disable_eager_execution()
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+
+
 class DecoderType:
     BestPath = 0
     BeamSearch = 1
@@ -29,10 +33,10 @@ class Model:
         self.snapID = 0
 
         # Whether to use normalization over a batch or a population
-        self.is_train = tf.placeholder(tf.bool, name='is_train')
+        self.is_train = tf.compat.v1.placeholder(tf.bool, name='is_train')
 
         # input image batch
-        self.inputImgs = tf.placeholder(tf.float32, shape=(None, Model.imgSize[0], Model.imgSize[1]))
+        self.inputImgs = tf.compat.v1.placeholder(tf.float32, shape=(None, Model.imgSize[0], Model.imgSize[1]))
 
         # setup CNN, RNN and CTC
         self.setup_cnn()
@@ -41,10 +45,10 @@ class Model:
 
         # setup optimizer to train NN
         self.batchesTrained = 0
-        self.learningRate = tf.placeholder(tf.float32, shape=[])
-        self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        self.learningRate = tf.compat.v1.placeholder(tf.float32, shape=[])
+        self.update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(self.update_ops):
-            self.optimizer = tf.train.RMSPropOptimizer(self.learningRate).minimize(self.loss)
+            self.optimizer = tf.compat.v1.train.RMSPropOptimizer(self.learningRate).minimize(self.loss)
 
         # initialize TF
         (self.sess, self.saver) = self.setup_tf()
@@ -63,15 +67,15 @@ class Model:
         pool = cnn_in4d  # input to first CNN layer
         for i in range(num_layers):
             kernel = tf.Variable(
-                tf.truncated_normal(
+                tf.random.truncated_normal(
                     [kernel_vals[i], kernel_vals[i], feature_vals[i], feature_vals[i + 1]],
                     stddev=0.1
                 )
             )
-            conv = tf.nn.conv2d(pool, kernel, padding='SAME', strides=(1, 1, 1, 1))
-            conv_norm = tf.layers.batch_normalization(conv, training=self.is_train)
-            relu = tf.nn.relu(conv_norm)
-            pool = tf.nn.max_pool(
+            conv = tf.compat.v1.nn.conv2d(pool, kernel, padding='SAME', strides=(1, 1, 1, 1))
+            conv_norm = tf.compat.v1.layers.batch_normalization(conv, training=self.is_train)
+            relu = tf.compat.v1.nn.relu(conv_norm)
+            pool = tf.compat.v1.nn.max_pool2d(
                 relu,
                 (1, pool_vals[i][0], pool_vals[i][1], 1),
                 (1, stride_vals[i][0], stride_vals[i][1], 1),
@@ -86,29 +90,36 @@ class Model:
 
         # basic cells which is used to build RNN
         num_hidden = 256
-        cells = [tf.contrib.rnn.LSTMCell(
+        cells = [tf.compat.v1.nn.rnn_cell.LSTMCell(
             num_units=num_hidden,
             state_is_tuple=True
         ) for _ in range(2)]  # 2 layers
 
         # stack basic cells
-        stacked = tf.contrib.rnn.MultiRNNCell(cells, state_is_tuple=True)
+        stacked = tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
 
         # bidirectional RNN
         # BxTxF -> BxTx2H
-        ((fw, bw), _) = tf.nn.bidirectional_dynamic_rnn(
+        ((fw, bw), _) = tf.compat.v1.nn.bidirectional_dynamic_rnn(
             cell_fw=stacked,
             cell_bw=stacked,
             inputs=rnn_in3d,
             dtype=rnn_in3d.dtype
         )
+        # ((fw, bw), _) = tf.keras.layers.Bidirectional(
+        #     tf.keras.layers.RNN(
+        #         cell=stacked,
+        #         inputs=rnn_in3d,
+        #         dtype=rnn_in3d.dtype
+        #     )
+        # )
 
         # BxTxH + BxTxH -> BxTx2H -> BxTx1X2H
         concat = tf.expand_dims(tf.concat([fw, bw], 2), 2)
 
         # project output to chars (including blank): BxTx1x2H -> BxTx1xC -> BxTxC
         kernel = tf.Variable(
-            tf.truncated_normal(
+            tf.random.truncated_normal(
                 [1, 1, num_hidden * 2,
                  len(self.charList) + 1],
                 stddev=0.1
@@ -125,15 +136,15 @@ class Model:
         self.ctcIn3dTBC = tf.transpose(self.rnnOut3d, [1, 0, 2])
         # ground truth text as sparse tensor
         self.gtTexts = tf.SparseTensor(
-            tf.placeholder(tf.int64, shape=[None, 2]),
-            tf.placeholder(tf.int32, [None]),
-            tf.placeholder(tf.int64, [2])
+            tf.compat.v1.placeholder(tf.int64, shape=[None, 2]),
+            tf.compat.v1.placeholder(tf.int32, [None]),
+            tf.compat.v1.placeholder(tf.int64, [2])
         )
 
         # calc loss for batch
-        self.seqLen = tf.placeholder(tf.int32, [None])
+        self.seqLen = tf.compat.v1.placeholder(tf.int32, [None])
         self.loss = tf.reduce_mean(
-            tf.nn.ctc_loss(
+            tf.compat.v1.nn.ctc_loss(
                 labels=self.gtTexts,
                 inputs=self.ctcIn3dTBC,
                 sequence_length=self.seqLen,
@@ -142,11 +153,11 @@ class Model:
         )
 
         # calc loss for each element to compute label probability
-        self.savedCtcInput = tf.placeholder(
+        self.savedCtcInput = tf.compat.v1.placeholder(
             tf.float32,
             shape=[Model.maxTextLen, None, len(self.charList) + 1]
         )
-        self.lossPerElement = tf.nn.ctc_loss(
+        self.lossPerElement = tf.compat.v1.nn.ctc_loss(
             labels=self.gtTexts,
             inputs=self.savedCtcInput,
             sequence_length=self.seqLen,
@@ -190,9 +201,9 @@ class Model:
         print('Python: ' + sys.version)
         print('Tensorflow: ' + tf.__version__)
 
-        sess = tf.Session()  # TF session
+        sess = tf.compat.v1.Session()  # TF session
 
-        saver = tf.train.Saver(max_to_keep=1)  # saver saves model to file
+        saver = tf.compat.v1.train.Saver(max_to_keep=1)  # saver saves model to file
         model_dir = 'model/'
         latest_snapshot = tf.train.latest_checkpoint(model_dir)  # is there a saved model?
 
@@ -208,7 +219,7 @@ class Model:
             print('Init with new values')
             sess.run(tf.global_variables_initializer())
 
-        return (sess, saver)
+        return sess, saver
 
     def to_sparse(self, texts):
         indices = []
