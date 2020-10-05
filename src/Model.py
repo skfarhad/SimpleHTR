@@ -217,7 +217,7 @@ class Model:
             saver.restore(sess, latest_snapshot)
         else:
             print('Init with new values')
-            sess.run(tf.global_variables_initializer())
+            sess.run(tf.compat.v1.global_variables_initializer())
 
         return sess, saver
 
