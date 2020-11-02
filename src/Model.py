@@ -9,6 +9,7 @@ import os
 
 tf.compat.v1.disable_eager_execution()
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+tf.get_logger().setLevel('ERROR')
 
 
 class DecoderType:
@@ -106,13 +107,6 @@ class Model:
             inputs=rnn_in3d,
             dtype=rnn_in3d.dtype
         )
-        # ((fw, bw), _) = tf.keras.layers.Bidirectional(
-        #     tf.keras.layers.RNN(
-        #         cell=stacked,
-        #         inputs=rnn_in3d,
-        #         dtype=rnn_in3d.dtype
-        #     )
-        # )
 
         # BxTxH + BxTxH -> BxTx2H -> BxTx1X2H
         concat = tf.expand_dims(tf.concat([fw, bw], 2), 2)
